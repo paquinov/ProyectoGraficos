@@ -1,6 +1,7 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <windows.h>
 
 #include <learnopengl/shader_m.h>
 #include <learnopengl/camera.h>
@@ -23,6 +24,8 @@
 using namespace std;
 
 Shader* shader;
+Shader *shader1;
+Model* model1;
 Model* model;
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -60,11 +63,16 @@ void motion_callback(int x, int y) {
 
 void init_resources() {
 	shader = new Shader("1.model_loading.vs", "1.model_loading.fs");
-	model = new Model("cs_havana.obj");
+	model = new Model("cs_assault.obj");
+	shader1 = new Shader("1.model_loading.vs", "1.model_loading.fs");
+	model1 = new Model("deagle.obj");
 
 }
 
-glm::vec3 camPosition(5.0f, -0.1f, 0.0f);
+//glm::vec3 camPosition(5.0f, 0.0f, 0.0f);
+glm::vec3 camPosition(0.0f, 3.45f, 0.0f);
+//glm::vec3 pistolPosition(5.0f, -10.0f, -48.0f);
+glm::vec3 pistolPosition(0.0f, 3.45f, 0.0f);
 GLfloat pitch = 0.0f;
 GLfloat yaw = -90.0f;
 glm::vec3 camUp(0.0f, 1.0f, 0.0f);
@@ -77,6 +85,7 @@ void onDisplay() {
 
 	// don't forget to enable shader before setting uniforms
 	shader->use();
+	shader1->use();
 
 	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
 	front.y = sin(glm::radians(pitch));
@@ -87,17 +96,28 @@ void onDisplay() {
 	camUp = glm::normalize(glm::cross(camRight, front));
 	// view/projection transformations
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f);
-	//glm::mat4 view = camera.GetViewMatrix();
+	//glm::mat4 view = camera.GetViewMatrix();C:\Users\Joe\Documents\20182\Gráficos\ta\avanceToAru\TemplateGL2\TemplateGL2\Debug
 	glm::mat4 view = glm::lookAt(camPosition, camPosition + front, camUp);
 	shader->setMat4("projection", projection);
 	shader->setMat4("view", view);
+	shader1->setMat4("projection", projection);
+	shader1->setMat4("view", view);
 
-	// render the loaded model
+	//render the loaded model
 	glm::mat4 mod = glm::scale(glm::mat4(1.0f), glm::vec3(0.002f, 0.002f, 0.002f)) *
-		glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+		glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		//* glm::rotate(glm::mat4(1.0f), 3.14f, glm::vec3(1.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
 	;	// it's a bit too big for our scene, so scale it down
 	shader->setMat4("model", mod);
 	model->Draw(*shader);
+
+ //glm::vec3(0.0f, -10.0f, 35.0f)
+
+	glm::mat4 mod1 = glm::translate(glm::mat4(1.0f), glm::vec3(camPosition.x + 0.05f, camPosition.y - 0.05f, camPosition.z))
+		*glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f), glm::vec3(0.0f,0.0f,1.0f))
+		* glm::scale(glm::mat4(1.0f), glm::vec3(0.015f, 0.015f, 0.015f));	// it's a bit too big for our scene, so scale it down
+	shader1->setMat4("model", mod1);
+	model1->Draw(*shader1);
 
 	glutSwapBuffers();
 }
@@ -109,12 +129,15 @@ void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
 	case 'w':
 		camPosition += front * avance;
+		pistolPosition += front * avance;
 		break;
 	case 's':
 		camPosition -= front * avance;
+		pistolPosition -= front * avance;
 		break;
 	case 'r':
 		camPosition += front * avance*2.0f;
+		pistolPosition += front * avance*2.0f;
 		break;
 	case 'd':
 		yaw = (yaw >= 180.0f) ? -180.0f + rotacion : yaw + rotacion;
@@ -127,6 +150,28 @@ void keyboard(unsigned char key, int x, int y) {
 
 	glutPostRedisplay();
 }
+
+/*void mouse(int state,int x, int y, int z) {
+	if (y > 400) yaw = (yaw <= -180.0f) ? 180.0f - rotacion : yaw - rotacion;
+	glutPostRedisplay();
+}*/
+
+void mouse(int button, int state, int x, int y)
+{
+		if (button == GLUT_RIGHT_BUTTON)
+		{
+				if (state == GLUT_DOWN)
+					glScalef(2.0, 2.0, 2.0);
+				else
+					cout << "right button lifted at (" << x << "," << y << ")" << endl;
+		}
+		else if (button == GLUT_LEFT_BUTTON)
+		{
+				if (state == GLUT_DOWN)
+					cout << "Disparo realizado" << endl;
+		}
+}
+
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
@@ -152,9 +197,11 @@ int main(int argc, char* argv[]) {
 	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glutMouseFunc(mouse_callback);
+	//glutMouseFunc(mouse_callback);
 	glutMotionFunc(motion_callback);
 	glutKeyboardFunc(keyboard);
+	glutMouseFunc(mouse);
+	//glutMouseWheelFunc(mouse);
 	glutMainLoop();
 
 
